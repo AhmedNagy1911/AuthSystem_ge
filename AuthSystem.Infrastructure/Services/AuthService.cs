@@ -1,5 +1,4 @@
-﻿// AuthSystem.Infrastructure/Services/AuthService.cs
-using System.Text;
+﻿using System.Text;
 using AuthSystem.Application.DTOs;
 using AuthSystem.Application.Errors;
 using AuthSystem.Application.Interfaces;

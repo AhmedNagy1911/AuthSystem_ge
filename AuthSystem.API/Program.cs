@@ -1,6 +1,7 @@
 using AuthSystem.Infrastructure.Extensions;
 using AuthSystem.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using AuthSystem.Application.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +12,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 
-
+// Dependency Injection
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddApplication();
+
 var app = builder.Build();
 
 // Auto Migration
