@@ -18,6 +18,8 @@ public class AuthService(
     JwtService jwtService,
     IEmailService emailService) : IAuthService
 {
+    private const string EmailConfirmationPurpose = "EmailConfirmation";
+
     public async Task<Result<AuthResponse>> LoginAsync(LoginRequest request)
     {
         var user = await userManager.FindByEmailAsync(request.Email);
@@ -88,26 +90,37 @@ public class AuthService(
         if (!result.Succeeded)
             return Result.Failure(AuthErrors.RegistrationFailed);
 
-        await SendConfirmationEmailAsync(user);
+        // بعث الـ OTP Code
+        await SendConfirmationCodeAsync(user);
 
         return Result.Success();
     }
 
-    public async Task<Result> ConfirmEmailAsync(string userId, string token)
+    public async Task<Result> ConfirmEmailAsync(ConfirmEmailRequest request)
     {
-        var user = await userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(request.UserId);
         if (user is null)
             return Result.Failure(AuthErrors.UserNotFound);
 
         if (user.EmailConfirmed)
             return Result.Failure(AuthErrors.EmailAlreadyConfirmed);
 
-        var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-        var result = await userManager.ConfirmEmailAsync(user, decodedToken);
+        // Verify الـ Code
+        var isValid = await userManager.VerifyUserTokenAsync(
+            user,
+            TokenOptions.DefaultPhoneProvider,
+            EmailConfirmationPurpose,
+            request.Code
+        );
 
-        return result.Succeeded
-            ? Result.Success()
-            : Result.Failure(AuthErrors.InvalidToken);
+        if (!isValid)
+            return Result.Failure(AuthErrors.InvalidCode);
+
+        // Confirm الـ Email يدوياً
+        user.EmailConfirmed = true;
+        await userManager.UpdateAsync(user);
+
+        return Result.Success();
     }
 
     public async Task<Result> ResendConfirmationEmailAsync(ResendConfirmationEmailRequest request)
@@ -119,7 +132,7 @@ public class AuthService(
         if (user.EmailConfirmed)
             return Result.Failure(AuthErrors.EmailAlreadyConfirmed);
 
-        await SendConfirmationEmailAsync(user);
+        await SendConfirmationCodeAsync(user);
 
         return Result.Success();
     }
@@ -184,17 +197,22 @@ public class AuthService(
         );
     }
 
-    private async Task SendConfirmationEmailAsync(ApplicationUser user)
+    private async Task SendConfirmationCodeAsync(ApplicationUser user)
     {
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-
-        var confirmLink = $"https://yourfrontend.com/confirm-email?userId={user.Id}&token={encodedToken}";
+        // بيولد 6 أرقام تلقائياً
+        var code = await userManager.GenerateUserTokenAsync(
+            user,
+            TokenOptions.DefaultPhoneProvider,
+            EmailConfirmationPurpose
+        );
 
         var body = $"""
             <h3>Confirm Your Email</h3>
-            <p>Hi {user.FirstName}, click the link below to confirm your email:</p>
-            <a href="{confirmLink}">Confirm Email</a>
+            <p>Hi {user.FirstName},</p>
+            <p>Your confirmation code is:</p>
+            <h1 style="letter-spacing: 8px; color: #4F46E5;">{code}</h1>
+            <p>This code will expire in 10 minutes.</p>
+            <p>If you didn't request this, please ignore this email.</p>
             """;
 
         await emailService.SendEmailAsync(user.Email!, "Confirm Your Email", body);

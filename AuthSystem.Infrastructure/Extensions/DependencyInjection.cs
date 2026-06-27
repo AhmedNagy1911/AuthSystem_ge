@@ -31,9 +31,16 @@ public static class DependencyInjection
             options.Password.RequireNonAlphanumeric = true;
             options.SignIn.RequireConfirmedEmail = true;
             options.User.RequireUniqueEmail = true;
+
+            // OTP عمره 10 دقايق
+            options.Tokens.ProviderMap["Phone"] = new TokenProviderDescriptor(
+                typeof(PhoneNumberTokenProvider<ApplicationUser>)
+            );
+
         })
         .AddEntityFrameworkStores<AppDbContext>()
-        .AddDefaultTokenProviders();
+        .AddDefaultTokenProviders()
+        .AddTokenProvider<PhoneNumberTokenProvider<ApplicationUser>>(TokenOptions.DefaultPhoneProvider);
 
         // JWT Authentication
         var jwtSettings = configuration.GetSection("JwtSettings");

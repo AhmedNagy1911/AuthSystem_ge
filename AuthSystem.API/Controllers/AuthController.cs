@@ -46,10 +46,10 @@ public class AuthController(IAuthService authService) : ControllerBase
             : result.ToProblem();
     }
 
-    [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
     {
-        var result = await authService.ConfirmEmailAsync(userId, token);
+        var result = await authService.ConfirmEmailAsync(request);
         return result.IsSuccess
             ? Ok(new { Message = "Email confirmed successfully." })
             : result.ToProblem();

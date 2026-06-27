@@ -38,7 +38,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseExceptionHandler();
+
 
 app.UseSerilogRequestLogging();
 
@@ -49,5 +49,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
+//app.UseExceptionHandler();
 app.Run();

@@ -34,6 +34,12 @@ public static class AuthErrors
         404
     );
 
+    public static readonly Error InvalidCode = new(
+       "Auth.InvalidCode",
+       "Invalid or expired confirmation code.",
+       400
+   );
+
     public static readonly Error InvalidToken = new(
         "Auth.InvalidToken",
         "Invalid or expired token.",
